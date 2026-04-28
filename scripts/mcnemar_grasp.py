@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-McNemar's test on the n=50 paired grasp trials.
+McNemar's test on a paired-trial grasp study.
 
-Backs Section III-F paragraph "6-DoF robotic arm" of the SuperEdge T-IM
-submission. Reproduces:
+>>> STATUS (2026-04-28): RESERVED FOR FOLLOW-UP STUDY <<<
 
-    n = 50 paired trials
-    baseline (YOLO only)         : 39 / 50  (78%)
-    YOLO + SuperEdge edge-refine : 45 / 50  (90%)
-    discordant counts            : b = 6, c = 0
-    concordant counts            : 39 (both succeed) + 5 (both fail) = 44
-    chi^2 (Yates' continuity)    : (|b - c| - 1)^2 / (b + c) = 25/6 ~= 4.17
-    p-value (two-sided)          : 0.041
-    significant at alpha = 0.05  : YES
+The current SuperEdge T-IM submission treats the 6-DoF arm setup
+as a qualitative application demonstration only — no paired-trial
+statistical evaluation is reported in the manuscript. This script
+is retained as a ready-to-run skeleton for a future fully-powered
+study; it accepts any paired-trial CSV matching the schema below
+and emits the standard McNemar contingency table + chi^2 + p-value.
+
+If you are reproducing the manuscript, this script is NOT part of
+the §III-F pipeline.
 
 Reads the released paired-trial log (one row per trial) and emits:
     - the 2x2 contingency table

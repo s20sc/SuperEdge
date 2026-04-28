@@ -21,9 +21,13 @@ budget combines the dominant noise sources into a **combined relative standard
 uncertainty of 6.9%** for downstream traceability—see
 [`scripts/uncertainty_budget.py`](scripts/uncertainty_budget.py).
 
-A 6-DoF arm grasp study with **n = 50 paired trials** (McNemar's test,
-$\chi^2 = 4.17$, $p = 0.041$) is reproduced from released trial logs by
-[`scripts/mcnemar_grasp.py`](scripts/mcnemar_grasp.py).
+A 6-DoF arm grasp setup is included as a **qualitative application
+demonstration** of edge-guided bounding-box refinement on transparent
+and reflective objects. A fully-powered, paired-trial statistical
+evaluation of grasp success is reserved for follow-up work; the
+[`scripts/mcnemar_grasp.py`](scripts/mcnemar_grasp.py) skeleton is
+retained for that future study and accepts any paired-trial CSV that
+matches the schema in its docstring.
 
 > **Reproducibility note.** Every numerical claim in §§II-G, III-C, III-D,
 > III-E, III-F of the accompanying T-IM submission is backed by exactly one

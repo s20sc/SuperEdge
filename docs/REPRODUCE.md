@@ -147,7 +147,20 @@ Cross-check:
 
 **Expected runtime**: ~30 minutes per method × 7 methods × (5 + 5) conditions.
 
-## 6. §III-F—6-DoF Arm McNemar's Test (n = 50)
+## 6. §III-F — 6-DoF Arm Qualitative Demonstration (no quantitative claim)
+
+The current submission treats the 6-DoF arm setup as a **qualitative
+application demonstration only** — no paired-trial statistical
+evaluation is reported in the manuscript. Therefore there is **nothing
+to reproduce numerically** for §III-F: the demonstration is visual, on
+representative target objects (a toy car and a bread loaf), and is shown
+in Figure~\ref{fig:yolo} of the paper.
+
+The `scripts/mcnemar_grasp.py` skeleton is retained for a future
+fully-powered paired-trial study; it is **not** part of the current
+reproducibility pipeline. If you wish to run it against your own
+paired-trial CSV (one row per trial, schema in the script docstring),
+the invocation would be:
 
 ```bash
 python scripts/mcnemar_grasp.py \
@@ -155,19 +168,8 @@ python scripts/mcnemar_grasp.py \
     --out    results/mcnemar.json
 ```
 
-Cross-check against paper Section III-F:
-- $n = 50$ paired trials
-- Baseline (YOLO only): $39 / 50$ (78%)
-- YOLO + SuperEdge: $45 / 50$ (90%)
-- $b = 6$, $c = 0$
-- McNemar with continuity correction: $\chi^2 = 4.17$, $p = 0.041$ (two-sided)
-- Significant at $\alpha = 0.05$
-
-The arm-control / grasp-execution code lives in a separate sister repository
-(see [README.md](../README.md)). The paired-trial outcome log released here is
-sufficient to reproduce the statistical test.
-
-**Expected runtime**: < 1 second.
+The shipped `data/grasp_trials/trials.csv` is intentionally header-only;
+it documents the schema for future use.
 
 ## End-to-end Smoke Test
 
