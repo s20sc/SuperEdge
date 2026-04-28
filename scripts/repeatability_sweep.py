@@ -107,16 +107,53 @@ def aggregate_homography_predictions(
     Implements Eq. (1) of the paper:
         F(I; f) = (1/N_h) * sum_i H_i^{-1} f(H_i(I))
 
-    REQUIRED behavior — each H_i must be drawn from the HOMOGRAPHY_PARAMS
-    distribution above. Uses kornia's random homography utility for
-    differentiability and inverse warping.
+    Each H_i is drawn from the HOMOGRAPHY_PARAMS distribution above. The
+    aggregation is **mean** (paper Eq. 1), realised here through the
+    upstream `homography_adaptation` function with `aggregation='sum'`,
+    which divides accumulated probabilities by the per-pixel valid-warp
+    count — the BIPED/HPatches-style mean estimator in the prior repo.
+
+    Returns the aggregated edge-probability map with shape [B, H, W].
     """
-    raise NotImplementedError(
-        "Drop in your existing homography_adaptation.py logic here. The "
-        "current repo's homography_adaptation.py already implements this — "
-        "just expose it as a callable that takes (image, N_h, seed) and "
-        "returns the aggregated edge-probability map."
+    import torch
+    from homography_adaptation import homography_adaptation
+
+    # Seed torch from the numpy RNG so kornia's homography sampling is
+    # reproducible per (scene, trial).
+    seed = int(rng.integers(0, 2**31 - 1))
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    # Map paper §II-F params -> homography_adaptation config schema.
+    scale_amp = max(HOMOGRAPHY_PARAMS["scale_max"] - 1.0,
+                    1.0 - HOMOGRAPHY_PARAMS["scale_min"])
+    config = {
+        "num": int(n_h),
+        "aggregation": "sum",
+        "valid_border_margin": HOMOGRAPHY_PARAMS["border_margin_px"],
+        "homographies": {
+            "translation":            True,
+            "rotation":               True,
+            "scaling":                True,
+            "perspective":            True,
+            "scaling_amplitude":      scale_amp,
+            "perspective_amplitude_x": HOMOGRAPHY_PARAMS["perspective_amp"],
+            "perspective_amplitude_y": HOMOGRAPHY_PARAMS["perspective_amp"],
+            "patch_ratio":            HOMOGRAPHY_PARAMS["patch_ratio"],
+            "max_angle":              HOMOGRAPHY_PARAMS["rotation_max_rad"],
+        },
+        "filter_counts": 0,
+    }
+
+    out = homography_adaptation(
+        net=model,
+        raw_image=image,
+        config=config,
+        device=str(image.device),
+        model_name="superedge",
     )
+    return out["prob"]
 
 
 def bootstrap_ci(
@@ -168,6 +205,8 @@ def main() -> None:
 
     import torch  # late import
     import pandas as pd
+    from homography_adaptation import read_image, to_tensor
+    from dataset.utils.homographic_augmentation import ratio_preserving_resize
 
     # 1. Load model and pinned scene list
     # ------------------------------------------------------------------------
@@ -181,6 +220,22 @@ def main() -> None:
         logger.warning("Manifest has %d images; paper protocol uses 12.",
                        len(image_ids))
 
+    # Paper §II-F operating resolution.
+    resize_hw = (480, 640)
+
+    def load_coco_scene(image_id: str) -> "torch.Tensor":
+        """Locate `<image_id>.jpg` under args.coco_dir, return [1,1,H,W] tensor."""
+        candidates = [args.coco_dir / f"{image_id}.jpg",
+                      args.coco_dir / f"{image_id}.png"]
+        for path in candidates:
+            if path.exists():
+                gray = read_image(str(path))
+                gray = ratio_preserving_resize(gray, resize_hw)
+                return to_tensor(gray, args.device)
+        raise FileNotFoundError(
+            f"COCO scene '{image_id}' not found under {args.coco_dir} "
+            f"(tried .jpg/.png).")
+
     rng = np.random.default_rng(args.seed)
 
     # 2. Sweep N_h and collect per-scene sigma_r
@@ -189,20 +244,16 @@ def main() -> None:
     for n_h in NH_GRID:
         sigma_per_scene = []
         for img_id in image_ids:
-            # TODO: load image as tensor on args.device
-            #     image = load_coco_image(args.coco_dir, img_id, args.device)
-            # For each k in 0..K-1, draw N_h homographies, aggregate, store.
+            image = load_coco_scene(img_id)
             trial_maps = []
-            for k in range(args.K):
+            for _ in range(args.K):
                 trial_seed = int(rng.integers(0, 2**31 - 1))
-                # pred_k = aggregate_homography_predictions(
-                #     model, image, n_h,
-                #     rng=np.random.default_rng(trial_seed))
-                # trial_maps.append(pred_k.cpu().numpy())
-                pass  # placeholder
-            # std_map = np.std(np.stack(trial_maps), axis=0)
-            # sigma_per_scene.append(float(std_map.mean()))
-            sigma_per_scene.append(float("nan"))  # TODO: real value
+                pred_k = aggregate_homography_predictions(
+                    model, image, n_h,
+                    rng=np.random.default_rng(trial_seed))
+                trial_maps.append(pred_k.detach().cpu().numpy())
+            std_map = np.std(np.stack(trial_maps), axis=0)
+            sigma_per_scene.append(float(std_map.mean()))
         sigma_per_scene = np.asarray(sigma_per_scene)
         mean, ci_low, ci_high = bootstrap_ci(
             sigma_per_scene, n_resamples=args.bootstrap, seed=args.seed)

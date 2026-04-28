@@ -90,25 +90,123 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def load_method(model: str, checkpoint: Path, device: str):
-    """
-    Method-key -> (callable forward, parameter count).
+def _auto_mask_forward(generator):
+    """Adapter: torch [1, C, H, W] tensor -> numpy uint8 RGB -> AMG output.
 
-    Implementations expected (extend as needed):
-        superedge       -- torch.load(checkpoint), forward(image)
-        sam_vit_h       -- official segment_anything package
-        sam2            -- sam2 package
-        mobilesam       -- MobileSAM package
-        fastsam         -- FastSAM package
-        edgesam         -- EdgeSAM package
-    Returns (forward_fn, n_params).
+    All SAM-family baselines compare under automatic-mask-generation per the
+    paper protocol (§III-C); the cost of the dense prompt grid is what
+    drives 0.5 FPS for SAM-ViT-H.
     """
-    raise NotImplementedError(
-        "Wire each baseline through its official inference API. SuperEdge "
-        "loads from torch.load(checkpoint); SAM-family loads via their "
-        "official packages with automatic-mask-generation enabled (paper "
-        "protocol — that's where the 0.5 FPS comes from)."
-    )
+    def forward(x):
+        import numpy as _np
+        arr = x.detach().clamp(0, 1).cpu().numpy()[0]
+        arr = (arr.transpose(1, 2, 0) * 255).astype(_np.uint8)
+        if arr.shape[2] == 1:
+            arr = _np.repeat(arr, 3, axis=2)
+        return generator.generate(arr)
+    return forward
+
+
+def _superedge_forward(net):
+    def forward(x):
+        import torch
+        with torch.no_grad():
+            if x.shape[1] == 3:
+                x = x.mean(dim=1, keepdim=True)
+            return net(x)
+    return forward
+
+
+def load_method(model: str, checkpoint: Path, device: str):
+    """Method-key -> (callable forward, parameter count).
+
+    SuperEdge loads via :mod:`model.superedge`. SAM-family baselines load
+    through their official packages with automatic-mask-generation
+    enabled — the paper protocol — so the timed forward includes the dense
+    prompt grid that drives the 0.5 FPS figure for SAM-ViT-H.
+    """
+    import torch
+
+    key = model.lower()
+    ckpt_str = str(checkpoint) if checkpoint is not None else None
+
+    if key == "superedge":
+        from model.superedge import SuperEdge
+        state = torch.load(checkpoint, map_location=device)
+        if hasattr(state, "eval"):
+            net = state.to(device).eval()
+        else:
+            cfg = {"name": "superedge", "using_bn": True}
+            net = SuperEdge(cfg, device=device, using_bn=True)
+            net.load_state_dict(state)
+            net = net.to(device).eval()
+        return _superedge_forward(net), sum(p.numel() for p in net.parameters())
+
+    if key in ("sam_vit_h", "sam_vit_l", "sam_vit_b"):
+        try:
+            from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+        except ImportError as e:
+            raise RuntimeError(
+                "Install Meta SAM: pip install git+https://github.com/facebookresearch/segment-anything"
+            ) from e
+        key_map = {"sam_vit_h": "vit_h", "sam_vit_l": "vit_l", "sam_vit_b": "vit_b"}
+        sam = sam_model_registry[key_map[key]](checkpoint=ckpt_str).to(device).eval()
+        return (_auto_mask_forward(SamAutomaticMaskGenerator(sam)),
+                sum(p.numel() for p in sam.parameters()))
+
+    if key == "sam2":
+        try:
+            from sam2.build_sam import build_sam2
+            from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
+        except ImportError as e:
+            raise RuntimeError("Install SAM2: pip install sam2") from e
+        cfg_path = checkpoint.with_suffix(".yaml")
+        if not cfg_path.exists():
+            raise FileNotFoundError(
+                f"SAM2 config not found at {cfg_path}; place the matching "
+                f".yaml next to the checkpoint or pass via SAM2_CFG env var.")
+        sam2 = build_sam2(str(cfg_path), ckpt_str, device=device).eval()
+        return (_auto_mask_forward(SAM2AutomaticMaskGenerator(sam2)),
+                sum(p.numel() for p in sam2.parameters()))
+
+    if key == "mobilesam":
+        try:
+            from mobile_sam import sam_model_registry, SamAutomaticMaskGenerator
+        except ImportError as e:
+            raise RuntimeError("Install MobileSAM: pip install mobile-sam") from e
+        sam = sam_model_registry["vit_t"](checkpoint=ckpt_str).to(device).eval()
+        return (_auto_mask_forward(SamAutomaticMaskGenerator(sam)),
+                sum(p.numel() for p in sam.parameters()))
+
+    if key == "fastsam":
+        try:
+            from ultralytics import FastSAM
+        except ImportError as e:
+            raise RuntimeError("Install ultralytics: pip install ultralytics") from e
+        net = FastSAM(ckpt_str)
+        n_params = sum(p.numel() for p in net.model.parameters()) \
+            if hasattr(net, "model") else 0
+        def forward(x):
+            import numpy as _np
+            arr = x.detach().clamp(0, 1).cpu().numpy()[0]
+            arr = (arr.transpose(1, 2, 0) * 255).astype(_np.uint8)
+            if arr.shape[2] == 1:
+                arr = _np.repeat(arr, 3, axis=2)
+            return net(arr, device=device, retina_masks=True, verbose=False)
+        return forward, n_params
+
+    if key == "edgesam":
+        try:
+            from edge_sam import sam_model_registry, SamAutomaticMaskGenerator
+        except ImportError as e:
+            raise RuntimeError("Install EdgeSAM: pip install edge-sam") from e
+        sam = sam_model_registry["edge_sam"](checkpoint=ckpt_str).to(device).eval()
+        return (_auto_mask_forward(SamAutomaticMaskGenerator(sam)),
+                sum(p.numel() for p in sam.parameters()))
+
+    raise ValueError(f"Unknown method key: '{model}'. Supported: "
+                     "superedge, sam_vit_h, sam_vit_l, sam_vit_b, sam2, "
+                     "mobilesam, fastsam, edgesam.")
 
 
 def measure_latency(forward_fn, dummy_input,
