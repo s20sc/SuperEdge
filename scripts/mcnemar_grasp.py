@@ -69,7 +69,7 @@ def main() -> None:
     from scipy import stats
     from statsmodels.stats.contingency_tables import mcnemar
 
-    df = pd.read_csv(args.trials)
+    df = pd.read_csv(args.trials, comment="#", skip_blank_lines=True)
     n = len(df)
 
     bs = df["baseline_success"].astype(int).to_numpy()
