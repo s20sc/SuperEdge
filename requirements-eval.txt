@@ -1,0 +1,23 @@
+# Evaluation-only dependencies for the T-IM measurement-systems framework.
+# Install ON TOP of requirements.txt (training stack):
+#     pip install -r requirements.txt
+#     pip install -r requirements-eval.txt
+
+# Bootstrap CIs and McNemar's test
+scipy>=1.11
+statsmodels>=0.14
+
+# Pareto / latency profiling
+fvcore>=0.1.5             # FLOPs counting (preferred)
+thop>=0.1.1               # FLOPs counting (fallback)
+torch>=1.13               # CUDA event timing API
+
+# Tabular data + plotting
+pandas>=2.0
+matplotlib>=3.7
+
+# Foundation-model baselines (for §III-C Pareto comparison)
+# Pin commit hashes when stabilising the comparison set.
+segment-anything @ git+https://github.com/facebookresearch/segment-anything.git
+mobile-sam @ git+https://github.com/ChaoningZhang/MobileSAM.git
+# fastsam, sam2, edgesam: install per their official instructions

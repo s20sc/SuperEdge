@@ -1,0 +1,26 @@
+# Pinned 12 COCO val2017 image IDs used in the repeatability sweep
+# (Section III-D, Table VII of the SuperEdge T-IM submission).
+#
+# These scenes were selected to span:
+#   - low-density edges (sky / wall / smooth surfaces)
+#   - high-density edges (foliage / urban texture / cluttered indoor)
+#   - moderate edges (single-object portraits, vehicles)
+#
+# REPLACE the 12 placeholder lines below with the actual COCO val2017 image
+# IDs you used. Format: one 12-digit zero-padded ID per line, no extension.
+# Example real IDs:  000000397133  000000522713  ...
+#
+# TODO: insert actual 12 image IDs from the experimental run.
+
+000000000001
+000000000002
+000000000003
+000000000004
+000000000005
+000000000006
+000000000007
+000000000008
+000000000009
+000000000010
+000000000011
+000000000012

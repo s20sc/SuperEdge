@@ -1,0 +1,69 @@
+cff-version: 1.2.0
+title: "SuperEdge: A Self-Calibrating Edge Detector for Vision-Based Measurement"
+message: "If you use this software or the released measurement protocol, please cite the accompanying paper."
+type: software
+version: "1.0.0"
+date-released: "2026-04-28"
+license: Apache-2.0
+url: "https://github.com/s20sc/SuperEdge"
+repository-code: "https://github.com/s20sc/SuperEdge"
+
+authors:
+  - family-names: Qin
+    given-names: Xue
+    email: qinxue@me.com
+    affiliation: "School of Software, Harbin Institute of Technology, Harbin, China"
+    orcid: "https://orcid.org/0000-0000-0000-000X"      # TODO: replace
+  - family-names: Leng
+    given-names: Kai
+    affiliation: "School of Computer Science and Technology, HIT Shenzhen, China"
+  - family-names: Zhang
+    given-names: Yuqi
+    affiliation: "School of Computer Science and Technology, HIT Harbin, China"
+  - family-names: Liu
+    given-names: Xin
+    affiliation: "School of Future Science and Engineering, Soochow University, Suzhou, China"
+  - family-names: Li
+    given-names: Tao
+    affiliation: "School of Future Science and Engineering, Soochow University, Suzhou, China"
+  - family-names: Chao
+    given-names: Pingfu
+    email: pfchao@suda.edu.cn
+    affiliation: "School of Computer Science and Technology, Soochow University, Suzhou, China"
+  - family-names: Li
+    given-names: Zhijun
+    email: lizhijun_os@hit.edu.cn
+    affiliation: "School of Computer Science and Technology, HIT Harbin, China"
+
+preferred-citation:
+  type: article
+  title: "SuperEdge: A Self-Calibrating Edge Detector for Vision-Based Measurement"
+  authors:
+    - family-names: Qin
+      given-names: Xue
+    - family-names: Leng
+      given-names: Kai
+    - family-names: Zhang
+      given-names: Yuqi
+    - family-names: Liu
+      given-names: Xin
+    - family-names: Li
+      given-names: Tao
+    - family-names: Chao
+      given-names: Pingfu
+    - family-names: Li
+      given-names: Zhijun
+  journal: "IEEE Transactions on Instrumentation and Measurement"
+  year: 2026
+  notes: "In submission"
+
+keywords:
+  - edge detection
+  - self-supervised learning
+  - measurement systems
+  - uncertainty quantification
+  - GUM
+  - homography adaptation
+  - foundation models
+  - vision-based sensing
+  - robotic perception

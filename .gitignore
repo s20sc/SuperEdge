@@ -1,0 +1,121 @@
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# =============================================================================
+# Reproducibility outputs (regenerate from scripts; do not commit)
+# =============================================================================
+results/
+*.csv.bak
+
+# Allow the released grasp-trial CSV (it IS the released trial log,
+# not a transient script output)
+!data/grasp_trials/trials.csv
+
+# =============================================================================
+# Model checkpoints / weights
+# =============================================================================
+export/
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# =============================================================================
+# Data (large datasets; never commit)
+# =============================================================================
+COCO/
+BIPED/
+BIPEDv2/
+BSDS500/
+NYUD/
+*.tar
+*.tar.gz
+*.zip
+
+# Allow only the small pinned manifests and trial CSV under data/
+!data/
+!data/manifests/
+!data/manifests/*.txt
+!data/grasp_trials/
+!data/grasp_trials/*.csv
+
+# =============================================================================
+# IDE / editor configs (machine-specific)
+# =============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# =============================================================================
+# OS-generated files
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# =============================================================================
+# Jupyter / notebook artifacts
+# =============================================================================
+.ipynb_checkpoints/
+*.ipynb_meta
+
+# =============================================================================
+# Logs / temp files
+# =============================================================================
+*.log
+*.tmp
+.cache/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# =============================================================================
+# Personal / iCloud sync artefacts
+# =============================================================================
+.icloud
+*.icloud
